@@ -66,9 +66,9 @@ final class ModuleDirector
      *
      * @param string $moduleName
      */
-    public static function isExist( $moduleName )
+    public static function isRegistered( $moduleName )
     {
-        
+        return isset( self::$registered[ strtolower( $moduleName ) ] );
     }
 
     /**
