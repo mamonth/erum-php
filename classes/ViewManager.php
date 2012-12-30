@@ -54,7 +54,10 @@ class ViewManager {
             }
         }
 
-        return ModuleDirector::get( $moduleName );
+        // init view module just for be sure
+        ModuleDirector::init( $moduleName );
+
+        return new $moduleName( ModuleDirector::getModuleConfig( $moduleName ) );
     }
 
     /**
