@@ -14,14 +14,16 @@ namespace Erum;
  * @property string $uri
  * @property string $rawUrl
  * @property bool $async
+ * @property-read array $headers
+ * @property-read string $extension
  */
 final class Request
 {
-    const GET = 'GET';
-    const POST = 'POST';
-    const PUT = 'PUT';
-    const DELETE = 'DELETE';
-    const CLI = 'CLI';
+    const GET       = 'GET';
+    const POST      = 'POST';
+    const PUT       = 'PUT';
+    const DELETE    = 'DELETE';
+    const CLI       = 'CLI';
 
     /**
      * Request method ( POST,GET,PUT, DELETE, CLI )
@@ -94,6 +96,13 @@ final class Request
     private $async = false;
 
     /**
+     * Request uri extension ( html, json, etc... )
+     *
+     * @var string|null
+     */
+    private $extension = false;
+
+    /**
      * Current request object
      *
      * @var \Erum\Request
@@ -128,13 +137,15 @@ final class Request
      * @param string $url
      * @return \Erum\Request
      */
-    public static function factory( $url = null, $method = null, $vars=null, $async = null )
+    public static function factory( $url = null, $method = null, array $vars = null, array $headers = null )
     {
-        //@TODO remove !
-        if( null === $url ) return self::current();
-        
+        if( null === $url )
+        {
+            $url = $_SERVER["REQUEST_URI"];
+        }
+
         $urlData = parse_url( $url );
-        
+
         if( !is_array($urlData) || !isset( $urlData['path'] ) )
         {
             throw new \Exception('Malformed url given');
@@ -142,31 +153,42 @@ final class Request
 
         $request = new self();
 
-        $request->uri       = self::cleanUri( $urlData['path'] );
-        $request->host      = ( isset($urlData['host'] ) && $urlData['host'] ) ? $urlData['host'] : $_SERVER["HTTP_HOST"];
-        $request->post      = self::current()->escapeVarsArray(  ( null !== $vars && $method = self::POST ) ? $vars : $_POST );
-        $request->get       = self::current()->escapeVarsArray( $vars ? $vars : $_GET );
-        $request->method    = $method ? $method : $_SERVER['REQUEST_METHOD'];
-        $request->async     = (null === $async) ? false : $async;
-        $request->rawUrl    = $url;
-        
-        if( self::isInitial() )
-        {
-            $request->referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
-
-            $request->headers = self::currentHeaders();
-        }
-        else
-        {
-            $request->referer = self::current()->rawUrl;
-        }
-
+        // save initial request
         if( null === self::$initial )
         {
             self::$initial = $request;
         }
 
+        // save current request
         self::$current = $request;
+
+        // normalize uri
+        $uri = '/' . trim( explode( '?', $urlData['path'] )[0], '/');
+
+        // Cut extension if exists. Do never assign variables in conditions !!! Here just fastest way
+        if( false !== ( $pos = strripos( $uri, '.' ) ) )
+        {
+            $request->extension = strtolower( substr( $uri, $pos + 1 ) );
+
+            $uri = substr( $uri, 0, - ( strlen( $request->extension ) + 1 ) );
+        }
+
+        $request->uri       = $uri;
+        $request->host      = ( isset($urlData['host'] ) && $urlData['host'] ) ? $urlData['host'] : $_SERVER["HTTP_HOST"];
+        $request->post      = self::escapeVarsArray(  ( null !== $vars && $method = self::POST ) ? $vars : $_POST );
+        $request->get       = self::escapeVarsArray( $vars ? $vars : $_GET );
+        $request->method    = $method ? $method : $_SERVER['REQUEST_METHOD'];
+        $request->rawUrl    = $url;
+        $request->headers   = $headers === null ? self::currentHeaders() : $headers;
+
+        if( $request->isInitial() )
+        {
+            $request->referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
+        }
+        else
+        {
+            $request->referer = self::current()->rawUrl;
+        }
 
         return $request;
     }
@@ -180,22 +202,7 @@ final class Request
     {
         if ( !( self::$current instanceof self ) )
         {
-            self::$current = new self();
-
-            self::$current->secured =  ($_SERVER["SERVER_PORT"] == 443 );
-            self::$current->method = $_SERVER['REQUEST_METHOD'];
-            self::$current->host = $_SERVER["HTTP_HOST"];
-
-            self::$current->post = self::$current->escapeVarsArray( $_POST );
-            self::$current->get = self::$current->escapeVarsArray( $_GET );
-
-            self::$current->uri = self::$current->cleanUri( $_SERVER["REQUEST_URI"] );
-
-            self::$current->async = self::$current->isAsync();
-
-            self::$current->referer = isset( $_SERVER['HTTP_REFERER'] ) ? $_SERVER['HTTP_REFERER'] : '';
-            
-            self::$current->rawUrl = isset( $_SERVER['QUERY_STRING'] ) ? $_SERVER['QUERY_STRING'] : '';
+            self::factory();
         }
 
         return self::$current;
@@ -226,34 +233,8 @@ final class Request
     }
 
     /**
-     * Return uri without scheme or get params
+     * @deprecated use headers instead
      *
-     * @param string $uri
-     * @return string
-     */
-    protected function cleanUri( $uri )
-    {
-        $uriArr = explode( '?', $uri );
-        
-        return '/' . trim( $uriArr[0], '/');
-    }
-
-    /**
-     * Return processed variables
-     *
-     * @todo Implement base checks and escape
-     *
-     * @param array $array
-     * @return array
-     */
-    protected function escapeVarsArray( array $array )
-    {
-        return $array;
-    }
-
-    /**
-     * 
-     * 
      * @return boolean
      */
     protected function isAsync()
@@ -323,7 +304,7 @@ final class Request
     {
         $router = new \Erum\Router( $this );
 
-        $router->performRequest();
+        return $router->performRequest();
     }
 
     /**
@@ -343,6 +324,19 @@ final class Request
         {
             throw new \Exception( 'Requested variable $' . $var . ' not exists!' );
         }
+    }
+
+    /**
+     * Return processed variables
+     *
+     * @todo Implement base checks and escape
+     *
+     * @param array $array
+     * @return array
+     */
+    public static function escapeVarsArray( array $array )
+    {
+        return $array;
     }
 
 

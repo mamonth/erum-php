@@ -6,7 +6,7 @@ namespace Erum;
  *
  * @author Andrew Tereshko <andrew.tereshko@gmail.com>
  */
-abstract class ModuleAbstract
+abstract class ModuleAbstract implements ModuleInterface
 {
     /**
      * Constructor definition. Must accept array with current config
@@ -21,13 +21,29 @@ abstract class ModuleAbstract
      */
     public static function factory( $configAlias = 'default' )
     {
-        $moduleName = array_pop( explode( '\\', get_called_class() ) );
+        $moduleName = explode( '\\', get_called_class() )[0];
 
         return \Erum\ModuleDirector::get( $moduleName, $configAlias );
     }
-    
-    public static function getAlias( $module = null )
+
+    /**
+     * Return module alias
+     *
+     * @return string
+     */
+    public static function getAlias()
     {
-        return strtolower( $module ?  $module : get_called_class() );
+        return strtolower( get_called_class() );
+    }
+
+    /**
+     * Bootstrap method.
+     * Will be executed only on module first time init.
+     * Do not use any application config here!
+     *
+     */
+    public static function init()
+    {
+
     }
 }

@@ -12,12 +12,13 @@
      * @property-read array $data
      * @property-read int   $status
      * @property-read array $headers
+     * @property-read array $body
      *
      */
     class Response
     {
         protected static $statusList = array(
-            100 =>"Continue",
+            100 => "Continue",
             101 => "Switching Protocols",
             200 => "OK",
             201 => "Created",
@@ -80,6 +81,22 @@
          * @var array
          */
         private $headers = array();
+
+        /**
+         * HTTP cookies
+         *
+         * @var array
+         */
+        private $cookies = array();
+
+        /**
+         * @var string
+         */
+        private $body = '';
+
+        private $protocolName = 'HTTP';
+
+        private $protocolVersion = '1.1';
 
         /**
          * Create new response instance
@@ -155,13 +172,70 @@
         }
 
         /**
+         * @param $name
+         * @param $value
+         * @param int $expire
+         * @param null $host
+         * @param null $secured
+         *
+         * @return \Erum\Response
+         */
+        public function addCookie( $name, $value, $expire = 0, $host = null, $secured = null )
+        {
+            return $this;
+        }
+
+        /**
          * Set response HTTP status
          *
          * @param int $code
+         *
+         * @return \Erum\Response
          */
         public function setStatus( $code )
         {
             $this->status = (int)$code;
+
+            return $this;
+        }
+
+        /**
+         * Set response body
+         *
+         * @param $content
+         * @return \Erum\Response
+         */
+        public function setBody( $content )
+        {
+            $this->body = (string)$content;
+
+            return $this;
+        }
+
+        /**
+         * Send all defined headers (including cookies)
+         *
+         * @return \Erum\Response
+         */
+        public function sendHeaders()
+        {
+            // If headers was already sent - skip
+            if( !headers_sent() )
+            {
+                // cookies
+                foreach ( $this->cookies as $name => $data )
+                {
+                    //setcookie();
+                }
+
+                // first - status header
+                header( $this->protocolName . '/' . $this->protocolVersion . ' ' . $this->status . ' ' . @self::$statusList[ $this->status ] );
+
+                foreach( $this->headers as $name => $value )
+                {
+                    header( $name . ':' . $value );
+                }
+            }
 
             return $this;
         }

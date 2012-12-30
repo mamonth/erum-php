@@ -39,6 +39,8 @@ class Router
 
     /**
      * Performs a request by given Request object data
+     *
+     * @return \Erum\Response
      */
     public function performRequest()
     {
@@ -46,12 +48,12 @@ class Router
         {
             self::redirect( '/' . trim( \Erum::config()->routes[$this->request->uri], '/' ), false, 200 );
         }
-        
-        if( false === ( @list( $this->controller, $this->action ) = self::getController( $this->request->uri, $this->requestRemains ) ) )
+
+        if( false === ( list( $this->controller, $this->action ) = (array)self::getController( $this->request->uri, $this->requestRemains ) ) )
         {
             throw new \Erum\Exception( 'Could not find controller class name!' );
         }
-        
+
         /* @var $controller ControllerAbstract */
         $controller = new $this->controller( $this );
         
@@ -60,9 +62,11 @@ class Router
             $this->action = $controller->getDefaultAction();
         }
                 
-        $controller->execute( $this->action, $this->requestRemains );
+        $response = $controller->execute( $this->action, $this->requestRemains );
 
         unset( $controller );
+
+        return $response;
     }
     
     /**
@@ -75,27 +79,33 @@ class Router
      */
     public static function getController( $uri, array &$remains = null )
     {
-        $remains = array();
+        $remains    = array();
         $controller = null;
-        $action = null;
+        $action     = null;
         
         list( $uri ) = explode( '?', $uri );
         
         $requestArr = array_filter( explode( '/', trim( $uri, '/' ) ) );
-        
-        if( !sizeof( $requestArr ) ) $requestArr[] = 'index';
+
+        if( empty( $requestArr ) )
+        {
+            $requestArr[] = 'index';
+        }
 
         $namespace = '\\' . \Erum::config()->application['namespace'] . '\\';
         
         while ( $chunk = array_shift( $requestArr ) )
         {
-            if ( class_exists( $namespace . ucfirst( $chunk ) . 'Controller' ) )
+            $chunkNormalized = ucfirst( $chunk );
+            $chunkNamespaced = $namespace . $chunkNormalized;
+
+            if ( class_exists( $chunkNamespaced . 'Controller' ) )
             {
-                $controller = $namespace . ucfirst( $chunk ) . 'Controller';
+                $controller = $chunkNamespaced . 'Controller';
             }
-            elseif( class_exists( $namespace . ucfirst( $chunk ) . '\\IndexController' ) )
+            elseif( class_exists( $chunkNamespaced . '\\IndexController' ) )
             {
-                $controller = $namespace . ucfirst( $chunk ) . '\\IndexController';
+                $controller = $chunkNamespaced . '\\IndexController';
             }
             elseif ( null !== $controller )
             {
@@ -107,13 +117,13 @@ class Router
             {
                 $remains[] = $chunk;
                 
-                if( !sizeof( $requestArr ) && 1 === sizeof( $remains ) )
+                if( empty( $requestArr ) && 1 === sizeof( $remains ) )
                 {
                     $controller = $namespace . 'IndexController';
                 }
             }
             
-            $namespace .= ucfirst( $chunk ) . '\\';
+            $namespace .= $chunkNormalized . '\\';
         }
         
         if( $controller )
@@ -208,12 +218,14 @@ class Router
         {
             throw new \Erum\Exception( 'Infinity loop detected.' );
         }
-        
-        $router = new self( \Erum\Request::factory( $url, Request::current()->method ) );
 
         try
         {
-            $router->performRequest();
+            $response = \Erum\Request::factory( $url, Request::current()->method )->execute();
+
+            $response->sendHeaders();
+
+            echo $response->body;
         }
         catch ( \Exception $e )
         {

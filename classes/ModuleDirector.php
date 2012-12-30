@@ -14,20 +14,29 @@ final class ModuleDirector
 
     public static function init( $moduleName )
     {
-        $modulePath = \Erum::config()->application->modulesRoot . DS . strtolower( $moduleName );
+        $moduleDirectory = strtolower( $moduleName );
 
-        if ( !file_exists( $modulePath ) )
-            throw new \Exception( 'Directory "' . $modulePath . '" for module "' . $moduleName . '" was not found.' );
-
-        // Trying to load module bootstrap file ( init.php )
-        if ( file_exists( $modulePath . DS . 'init.php' ) && !isset( self::$registered[$moduleName] ) )
+        // run only once for each module
+        if( !isset( self::$registered[ $moduleDirectory ] ) )
         {
-            include_once $modulePath . DS . 'init.php';
+            $modulePath = \Erum::config()->application->modulesRoot . DS . $moduleDirectory;
+
+            if ( !file_exists( $modulePath ) )
+                throw new \Exception( 'Directory "' . $modulePath . '" for module "' . $moduleName . '" was not found.' );
+
+            \Erum::addIncludePath( $modulePath . DS . 'classes' );
+
+            // Check for module main class
+            if( !class_exists( $moduleName, true ) )
+            {
+                throw new \Exception( 'Main module class ' . $moduleName . ' was not found.' );
+            }
+
+            // execute module bootstrap method ( init )
+            $moduleName::init();
+
+            self::$registered[strtolower( $moduleName )] = array( );
         }
-
-        \Erum::addIncludePath( $modulePath . DS . 'classes' );
-
-        self::$registered[strtolower( $moduleName )] = array( );
     }
 
     public static function get( $moduleName, $configAlias = 'default' )
@@ -42,7 +51,7 @@ final class ModuleDirector
 
         if ( !isset( self::$registered[$moduleAlias][$configAlias] ) )
         {
-            $moduleConfig = self::getModuleConfig( $moduleAlias, $configAlias );
+            $moduleConfig = self::getModuleConfig( $moduleName, $configAlias );
 
             self::$registered[$moduleAlias][$configAlias] = new $moduleClass( $moduleConfig );
 
@@ -72,17 +81,17 @@ final class ModuleDirector
         return array_keys( self::$registered );
     }
 
-    public static function getModuleConfig( $moduleAlias, $configAlias = null )
+    public static function getModuleConfig( $moduleName, $configAlias = null )
     {
         $moduleConfig = array();
-        
-        if ( \Erum::config( $configAlias )->get( 'modules' )->get( $moduleAlias, true ) )
+
+        if ( \Erum::config( $configAlias )->get( 'modules' )->get( $moduleName, true ) )
         {
-            $moduleConfig = \Erum::config( $configAlias )->get( 'modules' )->get( $moduleAlias );
+            $moduleConfig = \Erum::config( $configAlias )->get( 'modules' )->get( $moduleName );
 
             if ( !is_array( $moduleConfig ) )
             {
-                throw new \Exception( 'Configuration "' . $configAlias . '" for module ' . $moduleAlias . ' must be an array. ' );
+                throw new \Exception( 'Configuration "' . $configAlias . '" for module ' . $moduleName . ' must be an array. ' );
             }
         }
         

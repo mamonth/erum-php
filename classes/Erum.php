@@ -108,7 +108,26 @@ final class Erum
         // Store app namespace for autoloading
         self::instance()->namespaceToPath[$config['application']['namespace']] = $config['application']['root'];
 
+        // Normalize modules config
+        if( !isset( $config['modules'] ) ) $config['modules'] = array();
+
+        // Normalize view config
+        if( !isset( $config['views'] ) ) $config['views'] = array();
+
         self::instance()->config[$alias] = new \Erum\Config( $config, 1 );
+
+        // preinit modules
+        foreach( $config['modules'] as $moduleName => $moduleCfg )
+        {
+            \Erum\ModuleDirector::init( $moduleName );
+        }
+
+        // register views
+        foreach( $config['views'] as $moduleName => $mimeTypes )
+        {
+            \Erum\ViewManager::register( $mimeTypes, $moduleName );
+        }
+
     }
 
     /**
@@ -126,7 +145,7 @@ final class Erum
             throw new Exception( 'Config with alias "' . $alias . '" was not been attached.' );
         }
 
-        return self::getInstance()->config[$alias];
+        return self::instance()->config[$alias];
     }
 
     /**
@@ -139,11 +158,13 @@ final class Erum
         if ( null !== $configAlias )
             self::instance()->configAlias = $configAlias;
 
-        $router = new \Erum\Router( \Erum\Request::current() );
-
         try
         {
-            $router->performRequest();
+            $response = \Erum\Request::current()->execute();
+
+            $response->sendHeaders();
+
+            echo $response->body;
         }
         catch ( Exception $e )
         {

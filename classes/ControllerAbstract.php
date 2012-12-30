@@ -41,6 +41,8 @@ abstract class ControllerAbstract
         $this->request  = $router->request;
         $this->router   = $router;
         $this->response = \Erum\Response::factory();
+
+        $this->view     = \Erum\ViewManager::getView( $this->request );
     }
 
     /**
@@ -85,6 +87,13 @@ abstract class ControllerAbstract
         $result = call_user_func_array( array( $this, $action . $actionType ), $args );
         
         $this->onAfterAction( $result );
+
+        if( $this->view )
+        {
+            $this->view->setVar( 'response', $this->response->data );
+
+            $this->response->setBody( $this->view->fetch() );
+        }
 
         return $this->response;
     }
