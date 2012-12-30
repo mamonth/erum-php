@@ -91,6 +91,7 @@ final class Request
     /**
      * Is request async. ( X-Requested-With : XMLHttpRequest )
      *
+     * @deprecated
      * @var boolean
      */
     private $async = false;
@@ -302,9 +303,7 @@ final class Request
      */
     public function execute()
     {
-        $router = new \Erum\Router( $this );
-
-        return $router->performRequest();
+        return \Erum\Router::factory( $this )->performRequest();
     }
 
     /**

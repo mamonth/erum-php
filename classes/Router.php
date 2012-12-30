@@ -22,15 +22,72 @@ class Router
      * @var \Erum\Request
      */
     protected $request;
-    protected $section = '';
+
+    /**
+     * Controller class name
+     *
+     * @var string
+     */
     protected $controller;
+
+    /**
+     * Action (method) name
+     *
+     * @var string
+     */
     protected $action;
+
+    /**
+     * Array of uri parts - left after controller and action exclude
+     *
+     * @var array
+     */
     protected $requestRemains = array( );
-    
+
+    /**
+     * @deprecated use Response instead
+     *
+     * @var array
+     */
     protected static $headerByCode = array(
         403 => 'HTTP/1.1 403 Forbidden',
         404 => 'HTTP/1.1 404 Not Found',
     );
+
+    /**
+     * Map request object hast to router
+     *
+     * @var Router[]
+     */
+    private static $requestsMap = array();
+
+    /**
+     * Creates new router for request, or, return existed
+     *
+     * @param Request $request
+     * @return Router
+     */
+    public static function factory( Request $request )
+    {
+        $requestHash = spl_object_hash( $request );
+
+        if( !isset( self::$requestsMap[ $requestHash ] ) )
+        {
+            self::$requestsMap[ $requestHash ] = new self( $request );
+        }
+
+        return self::$requestsMap[ $requestHash ];
+    }
+
+    /**
+     * Get router for current request
+     *
+     * @return Router
+     */
+    public static function current()
+    {
+        return self::factory( Request::current() );
+    }
 
     public function __construct( Request $request )
     {
