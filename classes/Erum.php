@@ -217,27 +217,26 @@ final class Erum
      */
     public static function autoload( $className )
     {
-        $includePath = '';
+        $includePath    = '';
+        $classChunks    = array_filter( explode( '\\', $className ) );
+        $className      = array_pop( $classChunks );
 
-        $classChunks = array_filter( explode( '\\', trim( $className, '\\' ) ) );
-
-        $className = array_pop( $classChunks );
-
-        if ( sizeof( $classChunks ) )
+        if ( !empty( $classChunks ) )
         {
-            $namespace = array_shift( $classChunks );
+            $namespace      = array_shift( $classChunks );
+            $coreInstance   = self::instance();
 
             if ( $namespace == 'Erum' )
             {
                 array_unshift( $classChunks, __DIR__ );
             }
-            elseif ( array_key_exists( $namespace, self::instance()->namespaceToPath ) )
+            elseif ( array_key_exists( $namespace, $coreInstance->namespaceToPath ) )
             {
-                array_unshift( $classChunks, self::instance()->namespaceToPath[$namespace] . DS . 'classes' );
+                array_unshift( $classChunks, $coreInstance->namespaceToPath[$namespace] . DS . 'classes' );
             }
-            elseif ( in_array( strtolower( $namespace ), \Erum\ModuleDirector::getRegistered() ) )
+            elseif ( \Erum\ModuleDirector::isRegistered( $namespace ) )
             {
-                $modulesDir = self::instance()->config()->get( 'application' )->get( 'modulesRoot' );
+                $modulesDir = $coreInstance->config()->get( 'application' )->get( 'modulesRoot' );
 
                 array_unshift( $classChunks, $modulesDir . DS . strtolower( $namespace ) . DS . 'classes' );
             }
