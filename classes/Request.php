@@ -37,7 +37,7 @@ final class Request
      *
      * @var bool
      */
-    private $secured;
+    private $secured = false;
 
     /**
      * POST variables array
@@ -314,8 +314,7 @@ final class Request
      */
     public function __get( $var )
     {
-        // @TODO if $var is null "isset" function returns false !
-        if ( isset( $this->$var ) )
+        if ( property_exists( $this, $var ) )
         {
             return $this->$var;
         }

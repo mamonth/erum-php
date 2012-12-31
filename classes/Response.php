@@ -249,7 +249,7 @@
          */
         public function __get( $var )
         {
-            if ( isset( $this->$var ) )
+            if ( property_exists( $this, $var ) )
             {
                 return $this->$var;
             }
