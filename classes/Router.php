@@ -185,7 +185,8 @@ class Router
         
         if( $controller )
         {
-            if ( isset( $remains[0] ) )
+            // methods can't be numeric
+            if ( isset( $remains[0] ) && !is_numeric( $remains[0] ) )
             {
                 $action = array_shift( $remains );
             }
