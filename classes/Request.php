@@ -16,6 +16,8 @@ namespace Erum;
  * @property bool $async
  * @property-read array $headers
  * @property-read string $extension
+ * @property-read array $post
+ * @property-read array $get
  */
 final class Request
 {
