@@ -14,14 +14,14 @@ abstract class ModelAbstract
     
     public final function __get( $variable )
     {
-        $class = new \ReflectionClass( get_called_class() );
-		
-        if( $class->hasMethod( 'get' . ucfirst($variable) ) )
+        $method = 'get' . ucfirst($variable);
+
+        if( method_exists( $this, $method ) )
         {
-            return $this->{'get' . ucfirst($variable)}();
+            return $this->$method();
         }
         
-	    if( $class->hasProperty( $variable ) )
+	    if( property_exists( $this, $variable ) )
     	{
             return $this->$variable;
 	    }
@@ -31,13 +31,13 @@ abstract class ModelAbstract
 	
     public final function __set( $variable, $value )
     {
-        $class = new \ReflectionClass( get_called_class() );
+        $method = 'set' . ucfirst($variable);
 
-        if( $class->hasMethod( 'set' . ucfirst($variable) ) )
+        if( method_exists( $this, $method ) )
         {
-            $this->{'set' . ucfirst($variable)}( $value );
+            return $this->$method( $value );
         }
-        elseif( $class->hasProperty( $variable ) )
+        elseif( property_exists( $this, $variable ) )
         {
             $var = new \ReflectionProperty( $this, $variable );
 
@@ -54,11 +54,17 @@ abstract class ModelAbstract
         
         throw new \Exception('Trying to set value of property $' . $variable . ' that undeclared in class ' . get_called_class() );
     }
+
+    public final function __isset( $variable )
+    {
+        return property_exists( $this, $variable ) || method_exists( $this, 'get' . ucfirst( $variable ) );
+    }
     
     /**
-     * Enter description here...
+     * Method should return all properties, that makes model unique ( like primary key ).
+     * Return value will be treated as model signature.
      *
-     * @return mixed
+     * @return string|array
      */
     public static function identityProperty()
     {
@@ -83,4 +89,23 @@ abstract class ModelAbstract
         
         return implode( ':', $values );
     }
+
+    public function arrayFill( array $data, array &$errors = array() )
+    {
+        foreach( $data as $key => &$value )
+        {
+            try
+            {
+                $this->__set( $key, $value );
+            }
+            catch( ValidateArgumentException $e )
+            {
+                $errors[ $key ] = $e->getMessage();
+            }
+        }
+
+        return empty( $errors );
+    }
 }
+
+class ValidateArgumentException extends \Erum\Exception {};
