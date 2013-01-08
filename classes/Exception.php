@@ -11,3 +11,5 @@ namespace Erum;
 class Exception extends \Exception
 {
 }
+
+class UndeclaredArgumentException extends Exception {}

@@ -26,7 +26,7 @@ abstract class ModelAbstract
             return $this->$variable;
 	    }
     
-	    throw new \Exception('Trying to get value of property "' . $variable . '" that undeclared in class ' . get_class($this) );
+	    throw new UndeclaredArgumentException('Trying to get value of property "' . $variable . '" that undeclared in class ' . get_class($this) );
     }
 	
     public final function __set( $variable, $value )
@@ -52,7 +52,7 @@ abstract class ModelAbstract
             }
         }	
         
-        throw new \Exception('Trying to set value of property $' . $variable . ' that undeclared in class ' . get_called_class() );
+        throw new UndeclaredArgumentException('Trying to set value of property $' . $variable . ' that undeclared in class ' . get_called_class() );
     }
 
     public final function __isset( $variable )
@@ -90,7 +90,7 @@ abstract class ModelAbstract
         return implode( ':', $values );
     }
 
-    public function arrayFill( array $data, array &$errors = array() )
+    public function arrayFill( array $data, array &$errors = array(), $skipUndeclared = true )
     {
         foreach( $data as $key => &$value )
         {
@@ -101,6 +101,13 @@ abstract class ModelAbstract
             catch( ValidateArgumentException $e )
             {
                 $errors[ $key ] = $e->getMessage();
+            }
+            catch( UndeclaredArgumentException $e )
+            {
+                if( !$skipUndeclared )
+                {
+                    throw $e;
+                }
             }
         }
 
