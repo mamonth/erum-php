@@ -82,6 +82,9 @@ class ViewManager {
                 case 'json':
                     $extensionMime = 'application/json';
                     break;
+                case 'jsonp':
+                    $extensionMime = 'application/jsonp';
+                    break;
                 case 'xml':
                     $extensionMime = 'application/xml';
                     break;
