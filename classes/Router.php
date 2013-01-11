@@ -106,7 +106,7 @@ class Router
             self::redirect( '/' . trim( \Erum::config()->routes[$this->request->uri], '/' ), false, 200 );
         }
 
-        if( false === ( list( $this->controller, $this->action ) = (array)self::getController( $this->request->uri, $this->requestRemains ) ) )
+        if( false === ( @list( $this->controller, $this->action ) = self::getController( $this->request->uri, $this->requestRemains ) ) )
         {
             throw new \Erum\Exception( 'Could not find controller class name!' );
         }
@@ -172,23 +172,32 @@ class Router
             }
             else
             {
-                $remains[] = $chunk;
-                
-                if( empty( $requestArr ) && 1 === sizeof( $remains ) )
+                if( empty( $requestArr ) )
                 {
                     $controller = $namespace . 'IndexController';
+                    break;
                 }
             }
             
             $namespace .= $chunkNormalized . '\\';
         }
-        
+
         if( $controller )
         {
-            // methods can't be numeric
-            if ( isset( $remains[0] ) && !is_numeric( $remains[0] ) )
+            if ( !empty( $remains ) )
             {
                 $action = array_shift( $remains );
+            }
+            else
+            {
+                $action = $chunk;
+            }
+
+            // methods can't be numeric
+            if( is_numeric( $action ) )
+            {
+                array_unshift($remains, $action);
+                $action = null;
             }
 
             return array( $controller, $action );
