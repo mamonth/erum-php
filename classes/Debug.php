@@ -29,13 +29,18 @@ class Debug
 
         $output = highlight_string( "<?php\n" . str_replace( "=> \n", '=>', trim( $varDump, "'" ) ), true );
         $output = str_ireplace( '<span style="color: #0000BB">&lt;?php<br /></span>', '', $output );
-        $output = '<div style="padding:2px;background-color:999999;margin:1px;">
-			<h4 style="width:100%;background-color:999999;margin:0px;">
-			<a href="#" style="color:FFFFFF" onclick="
+
+        // Oh here comes the shit!
+        $output = '<div style="padding: 12px;background-color:#999;margin: 12px auto;width: 800px;border-radius: 5px;box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);">
+			<h4 style="width:100%;margin:0 auto;color:#FFF;text-align:center;">' . $message . '
+			<br/>
+			<br/>
+			<a href="javascript:void(0);" style="font-size:12px;color:white;text-decoration:none;" onclick="
 			var el = document.getElementById(\'' . md5( print_r( $var, true ) ) . '\');
-			if(el.style.display!=\'none\'){el.style.display=\'none\';}else{el.style.display=\'\';}">'
-                . $message . '</a></h4><div id="' . md5( print_r( $var, true ) ) . '"
-			style="display:block;padding-left: 10px;background-color:#F6F6F6"><pre style="margin:0px;">'
+			if(el.style.display!=\'none\'){el.style.display=\'none\';}else{el.style.display=\'\';}">show / hide trace</a>
+			</h4>
+			<div id="' . md5( print_r( $var, true ) ) . '" style="padding:12px;border-radius:5px;background-color:#FCFCFC;margin-top: 8px; display: none;">
+			<pre style="margin:0px;">'
                 . $output . '</pre></div></div>';
 
         if ( $return )
