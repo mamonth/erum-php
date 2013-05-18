@@ -25,6 +25,7 @@ final class Request
     const POST      = 'POST';
     const PUT       = 'PUT';
     const DELETE    = 'DELETE';
+    const OPTIONS   = 'OPTIONS';
     const CLI       = 'CLI';
 
     /**
@@ -138,6 +139,12 @@ final class Request
      * Factory method to create new request. By default (if $url is null) returns current request
      *
      * @param string $url
+     * @param int $method
+     * @param array $vars
+     * @param array $headers
+     *
+     * @throws \Exception @param int $method
+     *
      * @return \Erum\Request
      */
     public static function factory( $url = null, $method = null, array $vars = null, array $headers = null )
@@ -178,11 +185,72 @@ final class Request
 
         $request->uri       = $uri;
         $request->host      = ( isset($urlData['host'] ) && $urlData['host'] ) ? $urlData['host'] : $_SERVER["HTTP_HOST"];
-        $request->post      = self::escapeVarsArray(  ( null !== $vars && $method = self::POST ) ? $vars : $_POST );
-        $request->get       = self::escapeVarsArray( $vars ? $vars : $_GET );
+
+
         $request->method    = $method ? $method : $_SERVER['REQUEST_METHOD'];
         $request->rawUrl    = $url;
         $request->headers   = $headers === null ? self::currentHeaders() : $headers;
+
+        $request->get       = self::escapeVarsArray( $vars ? $vars : $_GET );
+
+
+
+        if( $request->method === self::PUT )
+        {
+            if( null === $vars )
+            {
+                $inputData = file_get_contents("php://input");
+
+                if( preg_match('/boundary=(.*)$/', $request->getHeader('Content-Type', ''), $matches) )
+                {
+                    // grab multipart boundary from content type header
+                    $boundary = $matches[1];
+
+                    // split content by boundary and get rid of last -- element
+                    $inputBlocks = preg_split("/-+$boundary/", $inputData );
+                    array_pop( $inputBlocks );
+
+                    // loop data blocks
+                    foreach ( $inputBlocks as $id => $block)
+                    {
+                        if ( empty( $block ) ) continue;
+
+                        // you'll have to var_dump $block to understand this and maybe replace \n or \r with a visibile char
+
+                        // parse uploaded files
+                        if ( false !== strpos( $block, 'application/octet-stream' ) )
+                        {
+                            // match "name", then everything after "stream" (optional) except for prepending newlines
+                            preg_match("/name=\"([^\"]*)\".*stream[\n|\r]+([^\n\r].*)?$/s", $block, $matches);
+                        }
+                        // parse all other fields
+                        else
+                        {
+                            // match "name" and optional value in between newline sequences
+                            preg_match('/name=\"([^\"]*)\"[\n|\r]+([^\n\r].*)?\r$/s', $block, $matches);
+                        }
+
+                        $inputBlocks[ $matches[1] ] = $matches[2];
+                    }
+
+                    $request->post = $inputBlocks;
+
+                    unset( $inputBlocks, $boundary, $id, $block );
+                }
+                else
+                {
+                    parse_str( $inputData, $request->post );
+                }
+
+                unset( $inputData, $matches );
+//                var_dump( $request->post );
+//                exit();
+            }
+        }
+        elseif( $request->method === self::POST )
+        {
+            $request->post  = self::escapeVarsArray( null !== $vars ? $vars : $_POST );
+        }
 
         if( $request->isInitial() )
         {
@@ -265,7 +333,7 @@ final class Request
             $value = isset( $this->get[$var] ) ? $this->get[$var] : null;
         }
 
-        if ( ( null === $value || self::POST === $this->method ) && ( null === $method || self::GET !== $method ) )
+        if ( null === $value && self::GET !== $method )
         {
             $value = isset( $this->post[$var] ) ? $this->post[$var] : null;
         }
@@ -274,9 +342,28 @@ final class Request
     }
 
     /**
+     * @param string $header
+     * @param bool   $defaultValue
+     *
+     * @return mixed
+     */
+    public function getHeader( $header, $defaultValue = false )
+    {
+        //normalize header name
+        $header = str_replace( ' ', '-', ucwords( strtolower( str_replace( array('_', '-'), ' ', $header ) ) ) );
+
+        header( 'X-debug:' . $header );
+
+        return isset( $this->headers[ $header ] ) ? $this->headers[ $header ] : $defaultValue;
+    }
+
+    /**
+     *
      * @param string $var
      * @param mixed $value
      * @param string $method
+     *
+     * @throws \InvalidArgumentException
      *
      * @return \Erum\Request
      */
@@ -312,6 +399,9 @@ final class Request
      * Accessor to internal variables
      *
      * @param string $var
+     *
+     * @throws \Exception
+     *
      * @return mixed
      */
     public function __get( $var )

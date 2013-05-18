@@ -32,15 +32,21 @@ abstract class ControllerAbstract
     protected $response;
 
     /**
-     * constructor
-     * 
-     * @param \Erum\Router $router 
+     * @var ViewInterface
      */
-    final public function __construct( \Erum\Router $router )
+    public $view;
+
+    /**
+     * constructor
+     *
+     * @param \Erum\Router      $router
+     * @param \Erum\Response    $response
+     */
+    final public function __construct( \Erum\Router $router, \Erum\Response $response )
     {
         $this->request  = $router->request;
         $this->router   = $router;
-        $this->response = \Erum\Response::factory();
+        $this->response = $response;
 
         $this->view     = \Erum\ViewManager::getView( $this->request );
     }
@@ -55,14 +61,24 @@ abstract class ControllerAbstract
         return '';
     }
 
-    public function onBeforeAction()
+    public function onBeforeAction( $action )
     {
-        
+        if ( !method_exists( $this, $action . $this->request->method ) )
+        {
+            throw new \Exception( 'Action ' . $action . $this->request->method . ' not found in ' . get_class( $this ) );
+        }
     }
 
     public function onAfterAction()
     {
         
+    }
+
+    public function getMethod( $action )
+    {
+        $methodName = $action . $this->request->method;
+
+        return method_exists( $this, $methodName ) ? $methodName : false;
     }
 
     /**
@@ -76,26 +92,28 @@ abstract class ControllerAbstract
     final public function execute( $action, array $args = null )
     {
         if( null === $args ) $args = array();
-        
-        $actionType = $this->request->method;
-        
-        if ( !method_exists( $this, $action . $actionType ) )
-            throw new \Exception( 'Action ' . $action . $actionType . ' not found in ' . get_class( $this ) );
-        
-        $this->onBeforeAction( $action, $actionType );
-        
-        $result = call_user_func_array( array( $this, $action . $actionType ), $args );
-        
-        $this->onAfterAction( $result );
 
-        if( $this->view )
+        $method = $this->getMethod( $action );
+
+        if( !$method )
         {
-            $this->view->setVar( 'response', $this->response->data );
+            $this->response->setStatus( 404 );
 
-            $this->response->setBody( $this->view->fetch() );
+            if( \Erum::config()->get( 'application' )->get( 'debug' ) )
+            {
+                throw new \Exception( 'Method ' . $method . ' was not found on ' . get_class( $this ) );
+            }
+
+            $action = 'notFound';
+        }
+
+        if( false !== $this->onBeforeAction( $action ) )
+        {
+            $result = call_user_func_array( array( $this, $action . $this->request->method ), $args );
+
+            $this->onAfterAction( $result );
         }
 
         return $this->response;
     }
-
 }

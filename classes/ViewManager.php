@@ -32,7 +32,7 @@ class ViewManager {
      * Return view module by mime type.
      * If array of mime types given - return first acceptable view
      *
-     * @param atring|array $mimeTypes
+     * @param string|array $mimeTypes
      *
      * @return \Erum\ViewInterface|null
      */
@@ -52,6 +52,14 @@ class ViewManager {
                 $moduleName = self::$mimeViews[ $mime ];
                 break;
             }
+
+            // if any view is acceptable - use first one
+            if( $mime == '*/*' )
+            {
+                reset( self::$mimeViews );
+                $moduleName = current( self::$mimeViews );
+                break;
+            }
         }
 
         // init view module just for be sure
@@ -69,7 +77,7 @@ class ViewManager {
     {
         $mime = array_map( 'trim', explode( ',', $request->headers['Accept'] ) );
 
-        // @TODO rewrite this part to more accurate mime hadle
+        // @TODO rewrite this part to more accurate mime handle
         if( $request->extension )
         {
             $extensionMime = null;

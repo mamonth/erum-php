@@ -45,16 +45,6 @@ class Router
     protected $requestRemains = array( );
 
     /**
-     * @deprecated use Response instead
-     *
-     * @var array
-     */
-    protected static $headerByCode = array(
-        403 => 'HTTP/1.1 403 Forbidden',
-        404 => 'HTTP/1.1 404 Not Found',
-    );
-
-    /**
      * Map request object hast to router
      *
      * @var Router[]
@@ -106,22 +96,59 @@ class Router
             self::redirect( '/' . trim( \Erum::config()->routes[$this->request->uri], '/' ), false, 200 );
         }
 
+        $response = \Erum\Response::factory();
+
         if( false === ( @list( $this->controller, $this->action ) = self::getController( $this->request->uri, $this->requestRemains ) ) )
         {
-            throw new \Erum\Exception( 'Could not find controller class name!' );
-        }
+            $response->setStatus( 404 );
 
-        /* @var $controller ControllerAbstract */
-        $controller = new $this->controller( $this );
-        
-        if( null === $this->action )
+            $response->set('message', 'Page not found');
+        }
+        else
         {
-            $this->action = $controller->getDefaultAction();
-        }
-                
-        $response = $controller->execute( $this->action, $this->requestRemains );
+            /* @var $controller ControllerAbstract */
+            $controller = new $this->controller( $this, $response );
 
-        unset( $controller );
+            if( null === $this->action )
+            {
+                $this->action = $controller->getDefaultAction();
+            }
+
+            try
+            {
+                $controller->execute( $this->action, $this->requestRemains );
+            }
+            catch( \Exception $e )
+            {
+                $response->setStatus( 502 );
+
+                // Handle application exceptions
+                if ( \Erum::config()->get( 'application' )->get( 'debug' ) )
+                {
+                    $response
+                        ->set('message', 'Exception: "' . $e->getMessage() . '"')
+                        ->set('file', $e->getFile() )
+                        ->set('line', $e->getLine() )
+                        ->set('trace', $e->getTrace() );
+                }
+
+                $controller->onAfterAction();
+            }
+
+            if( $controller->view )
+            {
+                foreach( $response->data as $var => $value )
+                {
+                    $controller->view->setVar( $var, $value );
+                }
+
+                $response->setBody( $controller->view->fetch() );
+
+                $response->addHeader( 'Content-type', $controller->view->getContentType() );
+            }
+
+            unset( $controller );
+        }
 
         return $response;
     }
@@ -205,13 +232,15 @@ class Router
         
         return false;
     }
-    
+
     /**
      * Build correct uri path by controller
-     * 
+     *
      * @param ControllerAbstract || string $controller - may be controller instance, or name
      * @param string $action
-     * @param array $args 
+     * @param array  $args
+     *
+     * @throws Exception
      * @return string
      */
     public static function getPath( $controller, $action = null, array $args = null )
@@ -262,16 +291,22 @@ class Router
 
     /**
      * Redirect.
-     * 
-     * @param string $url
+     *
+     * @param string  $url
      * @param boolean $isExternal
-     * @param int $statusCode 
+     * @param int     $statusCode
+     *
+     * @throws Exception
+     * @throws \Exception
      */
     public static function redirect( $url, $isExternal = false, $statusCode = 200 )
     {
-        if ( array_key_exists( $statusCode, self::$headerByCode ) )
+        $statusCode = (int)$statusCode;
+        $statusText = Response::getStatusText( $statusCode );
+
+        if ( $statusText )
         {
-            header( self::$headerByCode[$statusCode] );
+            header( 'HTTP/1.0 ' . $statusCode . ' ' . $statusText  );
         }
 
         if ( $isExternal )

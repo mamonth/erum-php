@@ -9,7 +9,7 @@ namespace Erum;
  * @subpackage Core
  *
  */
-class ModelCollection implements Iterator, ArrayAccess, Countable
+class ModelCollection implements \Iterator, \ArrayAccess, \Countable, \JsonSerializable
 {
     /**
      * Item collection storage
@@ -244,8 +244,11 @@ class ModelCollection implements Iterator, ArrayAccess, Countable
         return isset( $this->items[$key] ) ? $this->items[$key] : null;
     }
 
-    public function offsetSet( $key, ModelAbstract $model )
+    public function offsetSet( $key, $model )
     {
+        if( false === ( $model instanceof ModelAbstract ) )
+            throw new \InvalidArgumentException('');
+
         $key = $model->getId();
 
         if( !isset( $this->items[$key] ) ) $this->keys[] = $key;
@@ -299,4 +302,16 @@ class ModelCollection implements Iterator, ArrayAccess, Countable
         return isset( $this->items[ $this->keys[ $this->position ] ] );
     }
 
+
+    public function jsonSerialize()
+    {
+        $array = array();
+
+        foreach( $this->keys as &$key )
+        {
+            $array[ $key ] = $this->items[ $key ];
+        }
+
+        return $array;
+    }
 }
