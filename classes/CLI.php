@@ -29,13 +29,13 @@ namespace Erum;
  */
 class CLI
 {
-    const PARAM_INT = 1;
-    const PARAM_BOOL = 2;
-    const PARAM_STR = 4;
-    const PARAM_REQUIRED = 8;
+    const PARAM_INT         = 1;
+    const PARAM_BOOL        = 2;
+    const PARAM_STR         = 4;
+    const PARAM_REQUIRED    = 8;
     
     /**
-     * Enter description here...
+     * Class instance
      *
      * @var CLI
      */
@@ -62,20 +62,25 @@ class CLI
         
         return self::$instance;
     }
-    
+
     /**
      * Registering CLI option
      *
      * @param mixed $name
      * @param mixed $default
-     * @param int $type
+     * @param int $flags
      * @param string $description
+     *
+     * @throws \LogicException
+     *
+     * @internal param int $type
+     *
      * @return CLI
      */
     protected function registerOption( $name, $default = null, $flags = self::PARAM_STR, $description = null )
     {
         if( $flags & self::PARAM_REQUIRED && $flags & self::PARAM_BOOL )
-            throw new \Exception( 'Option can not be boolean and required on the same time!');
+            throw new \LogicException( 'Option can not be boolean and required on the same time!');
 
         $names = !is_array( $name ) ? array( $name ) : $name;
         
@@ -181,11 +186,12 @@ class CLI
 
         echo sizeof( $this->params ) ? "Arguments: \n" . implode( "\n", $paramStr ) . "\n\n\n" : '';
     }
-    
+
     /**
      * Returns script runtime parameter value
      *
      * @param string $option script runtime option (short or long)
+     * @throws \Exception
      * @return mixed
      */
     protected function getOption( $option )
@@ -195,11 +201,12 @@ class CLI
 
         return $this->params[ $option ]['value'];
     }
-    
+
     /**
      * Enter description here...
      *
-     * @param int $length
+     * @param int $timeout
+     * @internal param int $length
      * @return string
      */
     protected function read( $timeout = 60 )
@@ -221,7 +228,13 @@ class CLI
         
         return $input;
     }
-    
+
+    /**
+     * @param $method
+     * @param array $args
+     * @return mixed
+     * @throws \Exception
+     */
     public static function __callStatic( $method, array $args )
     {
         $reflection = new \ReflectionClass( __CLASS__ );
@@ -238,10 +251,15 @@ class CLI
             return call_user_func_array( array( self::current(), $method ), $args );
         }
     }
-    
+
+    /**
+     * @param $method
+     * @param array $args
+     * @return mixed
+     */
     public function __call( $method, array $args )
     {
-        call_user_func_array( array( $this, $method ), $args );
+        return call_user_func_array( array( $this, $method ), $args );
     }
 }
 
