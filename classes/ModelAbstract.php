@@ -12,20 +12,22 @@ abstract class ModelAbstract
 {
     protected $id;
     
-    public final function __get( $variable )
+    public final function &__get( $variable )
     {
         $method = 'get' . ucfirst($variable);
+        $return = null;
 
         if( method_exists( $this, $method ) )
         {
-            return $this->$method();
+            $return = $this->$method();
+            return $return;
         }
-        
-	    if( property_exists( $this, $variable ) )
+
+        if( property_exists( $this, $variable ) )
     	{
             return $this->$variable;
 	    }
-    
+
 	    throw new UndeclaredArgumentException('Trying to get value of property "' . $variable . '" that undeclared in class ' . get_class($this) );
     }
 	
