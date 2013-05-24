@@ -55,7 +55,7 @@ class Router
      * Creates new router for request, or, return existed
      *
      * @param Request $request
-     * @return Router
+     * @return \Erum\Router
      */
     public static function factory( Request $request )
     {
@@ -98,7 +98,7 @@ class Router
 
         $response = \Erum\Response::factory();
 
-        if( false === ( @list( $this->controller, $this->action ) = self::getController( $this->request->uri, $this->requestRemains ) ) )
+        if( false === ( list( $this->controller, $this->action ) = self::getController( $this->request->uri, $this->requestRemains ) ) )
         {
             $response->setStatus( 404 );
 
@@ -106,6 +106,7 @@ class Router
         }
         else
         {
+
             /* @var $controller ControllerAbstract */
             $controller = new $this->controller( $this, $response );
 
@@ -166,7 +167,7 @@ class Router
         $remains    = array();
         $controller = null;
         $action     = null;
-        
+
         list( $uri ) = explode( '?', $uri );
         
         $requestArr = array_filter( explode( '/', trim( $uri, '/' ) ) );
@@ -177,7 +178,7 @@ class Router
         }
 
         $namespace = '\\' . \Erum::config()->application['namespace'] . '\\';
-        
+
         while ( $chunk = array_shift( $requestArr ) )
         {
             $chunkNormalized = ucfirst( $chunk );
@@ -205,7 +206,7 @@ class Router
                     break;
                 }
             }
-            
+
             $namespace .= $chunkNormalized . '\\';
         }
 

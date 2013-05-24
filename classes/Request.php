@@ -8,16 +8,17 @@ namespace Erum;
  * @package Erum
  * @subpackage Core
  * 
- * @property string $referer
- * @property bool $secured
- * @property string $host
- * @property string $uri
- * @property string $rawUrl
- * @property bool $async
+ * @property-read string $referer
+ * @property-read bool $secured
+ * @property-read string $host
+ * @property-read string $uri
+ * @property-read string $rawUrl
+ * @property-read bool $async
  * @property-read array $headers
  * @property-read string $extension
  * @property-read array $post
  * @property-read array $get
+ * @property-read string $method
  */
 final class Request
 {
@@ -29,9 +30,9 @@ final class Request
     const CLI       = 'CLI';
 
     /**
-     * Request method ( POST,GET,PUT, DELETE, CLI )
+     * Request method ( POST, GET, PUT, DELETE, CLI )
      *
-     * @var int
+     * @var string
      */
     private $method;
 
