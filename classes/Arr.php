@@ -574,4 +574,22 @@ class Arr {
 		return $flat;
 	}
 
+    public static function ksortByArray( array $array, array $order )
+    {
+        $ordered = array();
+
+        foreach( $order as $key )
+        {
+            if( !array_key_exists( $key, $array ) ) continue;
+
+            $ordered[$key] = $array[$key];
+
+            unset($array[$key]);
+        }
+
+        $array = $ordered + $array;
+
+        return $array;
+    }
+
 } // End arr
