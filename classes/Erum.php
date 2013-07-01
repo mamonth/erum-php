@@ -74,11 +74,13 @@ final class Erum
 
     /**
      * Attach application config to core
-     * You may attach more than one config to core for autoloading classes from multiple app 
+     * You may attach more than one config to core for autoloading classes from multiple app
      * or having access to multiple config params.
-     * 
-     * @param array $config
+     *
+     * @param array  $config
      * @param string $alias
+     *
+     * @throws Exception
      */
     public static function attachConfig( array $config, $alias = null )
     {
@@ -132,7 +134,11 @@ final class Erum
 
     /**
      * Returns config by alias, or currently set as default
-     * 
+     *
+     * @param string $alias
+     *
+     * @throws Exception
+     *
      * @return \Erum\Config
      */
     public static function config( $alias = null )

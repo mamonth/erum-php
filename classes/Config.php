@@ -4,22 +4,25 @@ namespace Erum;
 /**
  * Description of Config
  *
+ * @TODO get rid of it
+ *
  * @author Andrew Tereshko <andrew.tereshko@gmail.com>
  * @package Erum
  */
-class Config implements \ArrayAccess
+class Config implements \ArrayAccess, \IteratorAggregate
 {
     /**
+     * internal storage array
      *
      * @var array
      */
     protected $storage;
 
     /**
-     * 
+     * Constructor
      * 
      * @param array $config
-     * @param boolean $recursive 
+     * @param int $recursionLevel
      */
     public function __construct( array $config, $recursionLevel = 0 )
     {
@@ -28,11 +31,16 @@ class Config implements \ArrayAccess
             $this->storage[ $key ] = ( is_array( $conf ) && $recursionLevel > 0 ) ? new self( $conf, $recursionLevel - 1 ) : $conf;
         }
     }
-    
+
     /**
      * Get config variable
-     * 
-     * @param string $var
+     *
+     * @param string  $var
+     * @param bool    $silent
+     *
+     * @throws \Exception
+     *
+     * @return mixed
      */
     public function get( $var, $silent = false )
     {
@@ -52,7 +60,13 @@ class Config implements \ArrayAccess
     {
         return $this->get( $var );
     }
-    
+
+    // IteratorAggregator implementation
+    public function getIterator()
+    {
+        return new \ArrayIterator( $this->storage ? $this->storage : array() );
+    }
+
     // ArrayAccess implementation
     
     public function offsetGet( $var )
