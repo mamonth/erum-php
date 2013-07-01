@@ -91,14 +91,16 @@ class Router
      */
     public function performRequest()
     {
-        if ( isset( \Erum::config()->routes[$this->request->uri] ) )
+        $uri = self::testStaticRoutes( $this->request->uri );
+
+        if( !$uri )
         {
-            self::redirect( '/' . trim( \Erum::config()->routes[$this->request->uri], '/' ), false, 200 );
+            $uri = $this->request->uri;
         }
 
         $response = \Erum\Response::factory();
 
-        if( false === ( list( $this->controller, $this->action ) = self::getController( $this->request->uri, $this->requestRemains ) ) )
+        if( false === ( list( $this->controller, $this->action ) = self::getController( $uri, $this->requestRemains ) ) )
         {
             $response->setStatus( 404 );
 
@@ -338,6 +340,29 @@ class Router
         }
 
         exit( 0 );
+    }
+
+    /**
+     * Test static routes with given uri.
+     *
+     * @param $uri
+     *
+     * @return string|bool
+     */
+    public static function testStaticRoutes( $uri )
+    {
+        $found = false;
+
+        foreach( \Erum::config()->routes as $route => $target )
+        {
+            $route = '@^' . $route . '$@i';
+
+            $uri = preg_replace( $route , $target, $uri, -1, $found );
+
+            if( $found ) break;
+        }
+
+        return $found ? $uri : false;
     }
 
     public function __get( $var )
