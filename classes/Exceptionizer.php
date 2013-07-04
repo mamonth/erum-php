@@ -33,6 +33,13 @@ class Exceptionizer
 
 class PHP_Exceptionizer_Catcher 
 {
+    public static $types = [
+        'E_ERROR', 'E_WARNING', 'E_PARSE', 'E_NOTICE', 'E_CORE_ERROR',
+        'E_CORE_WARNING', 'E_COMPILE_ERROR', 'E_COMPILE_WARNING',
+        'E_USER_ERROR', 'E_USER_WARNING', 'E_USER_NOTICE', 'E_STRICT',
+        'E_RECOVERABLE_ERROR', 'E_DEPRECATED'
+    ];
+
     public $mask = E_ALL;
     public $ignoreOther = false;
     public $prevHdl = null;
@@ -40,32 +47,37 @@ class PHP_Exceptionizer_Catcher
     public function handler($errno, $errstr, $errfile, $errline) 
     {
         if (!($errno & error_reporting())) return false;
-        if (!($errno & $this->mask)) {
-            if (!$this->ignoreOther) {
-                if ($this->prevHdl) {
+
+        if (!($errno & $this->mask))
+        {
+            if (!$this->ignoreOther)
+            {
+                if ($this->prevHdl)
+                {
                     $args = func_get_args();
                     call_user_func_array($this->prevHdl, $args);
-                } else {
+                }
+                else
+                {
                     return false;
                 }
             }
             return true;
         }
-        $types = array(
-            "E_ERROR", "E_WARNING", "E_PARSE", "E_NOTICE", "E_CORE_ERROR",
-            "E_CORE_WARNING", "E_COMPILE_ERROR", "E_COMPILE_WARNING",
-            "E_USER_ERROR", "E_USER_WARNING", "E_USER_NOTICE", "E_STRICT",
-            "E_RECOVERABLE_ERROR", "E_DEPRECATED"
-        );
-        $className = "E_EXCEPTION";
-        foreach ($types as $t) {
+
+        $className = 'E_EXCEPTION';
+
+        foreach ( self::$types as $t)
+        {
             $e = constant($t);
             
-            if ($errno & $e) {
+            if ($errno & $e)
+            {
                 $className = $t;
                 break;
             }
         }
+
         throw new $className($errno, $errstr, $errfile, $errline);
     }
 }
