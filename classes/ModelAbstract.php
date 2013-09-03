@@ -10,8 +10,19 @@ namespace Erum;
  */
 abstract class ModelAbstract
 {
+    /**
+     * @var mixed
+     */
     protected $id;
-    
+
+    /**
+     * Getter. Can return by link
+     *
+     * @param string $variable - variable name
+     *
+     * @return mixed
+     * @throws UndeclaredArgumentException
+     */
     public final function &__get( $variable )
     {
         $method = 'get' . ucfirst($variable);
@@ -30,7 +41,17 @@ abstract class ModelAbstract
 
 	    throw new UndeclaredArgumentException('Trying to get value of property "' . $variable . '" that undeclared in class ' . get_class($this) );
     }
-	
+
+    /**
+     * Setter.
+     *
+     * @param string $variable
+     * @param mixed $value
+     *
+     * @return bool
+     * @throws UndeclaredArgumentException
+     * @throws \Exception
+     */
     public final function __set( $variable, $value )
     {
         $method = 'set' . ucfirst($variable);
@@ -57,6 +78,13 @@ abstract class ModelAbstract
         throw new UndeclaredArgumentException('Trying to set value of property $' . $variable . ' that undeclared in class ' . get_called_class() );
     }
 
+    /**
+     * Overloading method
+     *
+     * @param string $variable
+     *
+     * @return bool
+     */
     public final function __isset( $variable )
     {
         return property_exists( $this, $variable ) || method_exists( $this, 'get' . ucfirst( $variable ) );
@@ -72,7 +100,12 @@ abstract class ModelAbstract
     {
         return 'id';
     }
-    
+
+    /**
+     * Base identity getter
+     *
+     * @return array|int|string
+     */
     public final function getId()
     {
         if( isset($this->id) ) return $this->id;
@@ -92,6 +125,17 @@ abstract class ModelAbstract
         return implode( ':', $values );
     }
 
+    /**
+     * Fills model with data from associative array.
+     * Catches ValidateArgumentException and fills $errors array with messages for each field.
+     *
+     * @param array $data
+     * @param array $errors
+     * @param bool  $skipUndeclared
+     *
+     * @return bool
+     * @throws UndeclaredArgumentException|\Exception
+     */
     public function arrayFill( array $data, array &$errors = array(), $skipUndeclared = true )
     {
         foreach( $data as $key => &$value )
