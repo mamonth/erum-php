@@ -75,7 +75,14 @@ class ViewManager {
      */
     public static function getView( \Erum\Request $request )
     {
-        $mime = array_map( 'trim', explode( ',', $request->headers['Accept'] ) );
+        if( isset( $request->headers['Accept'] ) )
+        {
+            $mime = array_map( 'trim', explode( ',', $request->headers['Accept'] ) );
+        }
+        else
+        {
+            $mime = array();
+        }
 
         // @TODO rewrite this part to more accurate mime handle
         if( $request->extension )
