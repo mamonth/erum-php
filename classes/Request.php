@@ -387,6 +387,42 @@ final class Request
     }
 
     /**
+     * Drop variable and its value from request
+     *
+     * @param string    $var
+     * @param null|int  $method
+     */
+    public function unsetVar( $var, $method = null )
+    {
+        if( ( $method === self::GET || null === $method ) && isset( $this->get[ $var ] ) )
+        {
+            unset( $this->get[ $var ] );
+        }
+
+        if( $method === self::POST || $method === self::PUT || $method === self::DELETE || null === $method )
+        {
+            if( isset( $this->post[ $var ] ) ) unset( $this->post[ $var ] );
+        }
+    }
+
+    public function issetVar( $var, $method = null )
+    {
+        $isset = false;
+
+        if( ( $method === self::GET || null === $method ) && isset( $this->get[ $var ] ) )
+        {
+            $isset = true;
+        }
+
+        if( $method === self::POST || $method === self::PUT || $method === self::DELETE || null === $method )
+        {
+            if( isset( $this->post[ $var ] ) ) $isset = true;
+        }
+
+        return $isset;
+    }
+
+    /**
      * Executes request
      *
      * @todo implement remote requests
