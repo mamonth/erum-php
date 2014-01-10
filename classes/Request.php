@@ -391,6 +391,7 @@ final class Request
      *
      * @param string    $var
      * @param null|int  $method
+     * @return \Erum\Request
      */
     public function unsetVar( $var, $method = null )
     {
@@ -403,6 +404,8 @@ final class Request
         {
             if( isset( $this->post[ $var ] ) ) unset( $this->post[ $var ] );
         }
+
+        return $this;
     }
 
     public function issetVar( $var, $method = null )
