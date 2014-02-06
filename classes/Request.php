@@ -153,12 +153,23 @@ final class Request
         if( null === $url )
         {
             $url = $_SERVER["REQUEST_URI"];
+
+            if( isset( $_SERVER['HTTP_HOST'] ) && $_SERVER['HTTP_HOST'] )
+            {
+                $url = $_SERVER['HTTP_HOST'] . $url;
+
+                if( isset( $_SERVER['HTTPS'] ) )
+                {
+                    $url = 'http' . ( ($_SERVER['HTTPS'] && $_SERVER['HTTPS'] !== 'off') ? 's' : '' ) . '://' . $url;
+                }
+            }
         }
 
         $urlData = parse_url( $url );
 
         if( !is_array($urlData) || !isset( $urlData['path'] ) )
         {
+            var_dump( $url );
             throw new \Exception('Malformed url given');
         }
 
@@ -184,10 +195,16 @@ final class Request
             $uri = substr( $uri, 0, - ( strlen( $request->extension ) + 1 ) );
         }
 
+        if( isset($urlData['host'] ) && $urlData['host'] )
+        {
+            $request->host = $urlData['host'];
+        }
+        elseif( isset( $_SERVER['HTTP_HOST'] ) )
+        {
+            $request->host = $_SERVER['HTTP_HOST'];
+        }
+
         $request->uri       = $uri;
-        $request->host      = ( isset($urlData['host'] ) && $urlData['host'] ) ? $urlData['host'] : $_SERVER["HTTP_HOST"];
-
-
         $request->method    = $method ? $method : $_SERVER['REQUEST_METHOD'];
         $request->rawUrl    = $url;
         $request->headers   = $headers === null ? self::currentHeaders() : $headers;
@@ -352,8 +369,6 @@ final class Request
     {
         //normalize header name
         $header = str_replace( ' ', '-', ucwords( strtolower( str_replace( array('_', '-'), ' ', $header ) ) ) );
-
-        header( 'X-debug:' . $header );
 
         return isset( $this->headers[ $header ] ) ? $this->headers[ $header ] : $defaultValue;
     }
