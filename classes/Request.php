@@ -158,10 +158,7 @@ final class Request
             {
                 $url = $_SERVER['HTTP_HOST'] . $url;
 
-                if( isset( $_SERVER['HTTPS'] ) )
-                {
-                    $url = 'http' . ( ($_SERVER['HTTPS'] && $_SERVER['HTTPS'] !== 'off') ? 's' : '' ) . '://' . $url;
-                }
+		$url = 'http' .  ( (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 's' : '' ) . '://' . $url;
             }
         }
 
