@@ -44,7 +44,25 @@ class Config implements \ArrayAccess, \IteratorAggregate
      */
     public function get( $var, $silent = false )
     {
-        if( !isset( $this->storage[ $var ] ) )
+        $found  = true;
+        $data   = $this->storage;
+        $path   = explode('.', $var );
+
+        for ($x=0; ($x < count($path) and $found); $x++){
+
+            $key = $path[$x];
+
+            if( isset( $data[$key] ) )
+            {
+                $data = $data[$key];
+            }
+            else
+            {
+                $found = false;
+            }
+        }
+
+        if( !$found )
         {
             if( !$silent ) throw new \Exception( 'Trying access to non exist property "' . $var . '"' );
             
@@ -52,7 +70,7 @@ class Config implements \ArrayAccess, \IteratorAggregate
         }
         else
         {
-            return $this->storage[ $var ];
+            return $data;
         }
     }
 
