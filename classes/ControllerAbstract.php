@@ -63,10 +63,7 @@ abstract class ControllerAbstract
 
     public function onBeforeAction( $action )
     {
-        if ( !method_exists( $this, $action . $this->request->method ) )
-        {
-            throw new \Exception( 'Action ' . $action . $this->request->method . ' not found in ' . get_class( $this ) );
-        }
+
     }
 
     public function onAfterAction()
@@ -76,7 +73,8 @@ abstract class ControllerAbstract
 
     public function getMethod( $action )
     {
-        $methodName = $action . $this->request->method;
+        $requestMethod  = $this->request->issetVar('_method') ? strtoupper( $this->request->getVar('_method') ) : $this->request->method;
+        $methodName     = $action . $requestMethod;
 
         return method_exists( $this, $methodName ) ? $methodName : false;
     }
@@ -109,7 +107,7 @@ abstract class ControllerAbstract
 
         if( false !== $this->onBeforeAction( $action ) )
         {
-            $result = call_user_func_array( array( $this, $action . $this->request->method ), $args );
+            $result = call_user_func_array( array( $this, $method ), $args );
 
             $this->onAfterAction( $result );
         }
