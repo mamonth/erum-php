@@ -102,9 +102,9 @@ class Router
 
         if( false === ( list( $this->controller, $this->action ) = self::getController( $uri, $this->requestRemains ) ) )
         {
-            $response->setStatus( 404 );
-
-            $response->set('message', 'Page not found');
+            $response
+                ->setStatus( 404 )
+                ->set('message', 'Page not found');
         }
         else
         {
@@ -174,42 +174,32 @@ class Router
         
         $requestArr = array_filter( explode( '/', trim( $uri, '/' ) ) );
 
-        if( empty( $requestArr ) )
+        $namespace  = $baseNamespace = '\\' . \Erum::config()->application['namespace'] . '\\';
+
+        $nsString = $baseNamespace . implode('\\', array_map( 'ucfirst', $requestArr ) ) . '\\';
+
+        do
         {
-            $requestArr[] = 'index';
+            $nsString = substr( $nsString, 0, strrpos( $nsString, '\\' ) );
+
+            if( class_exists( $nsString . 'Controller' ) )
+            {
+                $controller = $nsString . 'Controller';
+            }
+            elseif( class_exists( $nsString . '\\IndexController' ) )
+            {
+                $controller = $nsString . '\\IndexController';
+            }
+            elseif( !empty( $requestArr ) )
+            {
+                array_unshift( $remains, array_pop( $requestArr ) );
+            }
         }
+        while( !$controller && !empty( $requestArr ) );
 
-        $namespace = '\\' . \Erum::config()->application['namespace'] . '\\';
-
-        while ( $chunk = array_shift( $requestArr ) )
+        if( !$controller )
         {
-            $chunkNormalized = ucfirst( $chunk );
-            $chunkNamespaced = $namespace . $chunkNormalized;
-
-            if ( class_exists( $chunkNamespaced . 'Controller' ) )
-            {
-                $controller = $chunkNamespaced . 'Controller';
-            }
-            elseif( class_exists( $chunkNamespaced . '\\IndexController' ) )
-            {
-                $controller = $chunkNamespaced . '\\IndexController';
-            }
-            elseif ( null !== $controller )
-            {
-                $remains[] = $chunk;
-                $remains = array_merge( $remains, $requestArr );
-                break;
-            }
-            else
-            {
-                if( empty( $requestArr ) )
-                {
-                    $controller = $namespace . 'IndexController';
-                    break;
-                }
-            }
-
-            $namespace .= $chunkNormalized . '\\';
+            $controller = $baseNamespace . 'IndexController';
         }
 
         if( $controller )
@@ -217,10 +207,6 @@ class Router
             if ( !empty( $remains ) )
             {
                 $action = array_shift( $remains );
-            }
-            else
-            {
-                $action = $chunk;
             }
 
             // methods can't be numeric
@@ -232,7 +218,7 @@ class Router
 
             return array( $controller, $action );
         }
-        
+
         return false;
     }
 
