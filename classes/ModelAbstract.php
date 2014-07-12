@@ -10,6 +10,8 @@ namespace Erum;
  */
 abstract class ModelAbstract
 {
+    const requiredProperties = '';
+
     /**
      * @var mixed
      */
@@ -158,6 +160,35 @@ abstract class ModelAbstract
         }
 
         return empty( $errors );
+    }
+
+    /**
+     * Return constant requiredProperties as array
+     *
+     * @return array
+     */
+    public static function getRequiredProperties()
+    {
+        return array_filter( explode( ',', static::requiredProperties ) );
+    }
+
+    /**
+     * Check properties taken from ModelClass::getRequiredProperties() for empty (non numeric) value
+     * If some of properties are empty - return it in array, otherwise - return true
+     *
+     * @return true|array
+     */
+    public function checkRequiredProperties()
+    {
+        $props = self::getRequiredProperties();
+        $empty = array();
+
+        foreach( $props as $prop )
+        {
+            if( empty( $this->$prop ) && $this->$prop !== 0 ) $empty[] = $prop;
+        }
+
+        return empty( $empty ) ? true : $empty;
     }
 }
 
