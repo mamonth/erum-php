@@ -106,7 +106,7 @@ abstract class ModelAbstract
     /**
      * Base identity getter
      *
-     * @return array|int|string
+     * @return int|string
      */
     public final function getId()
     {
@@ -189,6 +189,11 @@ abstract class ModelAbstract
         }
 
         return empty( $empty ) ? true : $empty;
+    }
+
+    public static function id2string( $id )
+    {
+        return is_array( $id ) ? implode( ':', $id ) : $id;
     }
 }
 

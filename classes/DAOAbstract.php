@@ -2,9 +2,7 @@
 namespace Erum;
 
 /**
- * Abstract Data Access Object implementation
- *
- * WARNING : just implementation example here, no working code !
+ * Abstract Data Access Object
  *
  * @author Andrew Tereshko <andrew.tereshko@gmail.com>
  * @package erum
@@ -20,32 +18,6 @@ abstract class DAOAbstract
      * @return ModelAbstract
      */
     abstract public static function get( $modelId );
-//    {
-//        if ( !$modelId ) return null;
-//        
-//            $className = self::getModelClass( true );
-//
-//        $properties = (array) $className::identityProperty();
-//
-//        $modelId = (array) $modelId;
-//
-//        if ( sizeof( $properties ) != sizeof( $modelId ) )
-//            throw new Exception( 'Model identity properties count do not equal count of values given.' );
-//
-//        $model = ModelWatcher::instance()->get( $className, $modelId );
-//
-//        if ( null === $model )
-//        {
-//            // Here comes implementation
-//        }
-//        
-//        if( null !== $model )
-//        {
-//            ModelWatcher::instance()->bind( $model );
-//        }
-//
-//        return $model;
-//    }
 
     /**
      * Delete model data from storage by model Id.
@@ -58,33 +30,15 @@ abstract class DAOAbstract
     /**
      * Gets models list
      *
-     * @param string $condition
-     * @return array
+     * @return ModelAbstract[]
      */
     abstract public static function getList();
-//    {
-//            $className = self::getModelClass( true );
-//
-//        $table = self::getModelTable( $className );
-//
-//        // Here we are get list from some storage
-//        $sourceList = array();
-//        
-//        $list = array( );
-//
-//        foreach( $sourceList as $model )
-//        {
-//           ModelWatcher::instance()->bind( $model );
-//        }
-//
-//        return $list;
-//    }
 
     /**
      * Gets models list by ids
      *
-     * @param mixed $condition
-     * @return array
+     * @param array $ids
+     * @return ModelAbstract[]
      */
     abstract public static function getListByIds( array $ids );
 
@@ -96,6 +50,10 @@ abstract class DAOAbstract
     abstract public static function getCount( $condition = false );
 
     /**
+     * Retrieve model class from constant "model" or from DAO class name
+     *
+     * @param boolean $dieOnError - define if exception will be raised on error
+     * @throws \Exception
      * @return string
      */
     public static function getModelClass( $dieOnError = false )

@@ -105,10 +105,7 @@ class ModelWatcher
 
     protected function getKeys( $modelClass, $value = null, $property = null )
     {
-        if ( !class_exists( $modelClass ) )
-            throw new \Exception( 'Could not find class ' . $modelClass );
-        
-        if ( !in_array( 'Erum\ModelAbstract', class_parents( $modelClass ) ) )
+        if ( !is_subclass_of( $modelClass, '\Erum\ModelAbstract' ) )
             throw new \Exception( 'Class ' . $modelClass . ' is not correct erum model.' );
 
         if ( null === $property )

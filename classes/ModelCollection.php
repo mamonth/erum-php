@@ -12,6 +12,13 @@ namespace Erum;
 class ModelCollection implements \Iterator, \ArrayAccess, \Countable, \JsonSerializable
 {
     /**
+     * Model class name
+     *
+     * @var string
+     */
+    protected $modelClass;
+
+    /**
      * Item collection storage
      *
      * @var array
@@ -24,6 +31,13 @@ class ModelCollection implements \Iterator, \ArrayAccess, \Countable, \JsonSeria
      * @var array
      */
     protected $keys = array();
+
+    /**
+     * Map id => item key
+     *
+     * @var array
+     */
+    protected $id2key = array();
 
     /**
      * Current key position storage
@@ -52,6 +66,21 @@ class ModelCollection implements \Iterator, \ArrayAccess, \Countable, \JsonSeria
         $collection->append( $modelList );
 
         return $collection;
+    }
+
+    /**
+     * @param string $modelClass
+     * @throws Exception
+     */
+    public function __construct( $modelClass = '\Erum\ModelAbstract' )
+    {
+        if( !class_exists( $modelClass ) )
+            throw new \Erum\Exception('Class "' . $modelClass . '" not found.');
+
+        if( !is_a( $modelClass, '\Erum\ModelAbstract' , true ) )
+            throw new \Erum\Exception('Class "' . $modelClass . '" must be equal or successor of \Erum\ModelAbstract.');
+
+        $this->modelClass = $modelClass;
     }
 
     /**
@@ -210,6 +239,33 @@ class ModelCollection implements \Iterator, \ArrayAccess, \Countable, \JsonSeria
     }
 
     /**
+     * @param $id
+     * @return \Erum\ModelAbstract|null
+     */
+    public function getById( $id )
+    {
+        $id = ModelAbstract::id2string( $id );
+
+        return isset( $this->id2key[ $id ] ) ? $this->items[ $this->id2key[ $id ] ] : null;
+    }
+
+    public function unsetById( $id )
+    {
+        $id = ModelAbstract::id2string( $id );
+
+        $key = isset( $this->id2key[ $id ] ) ? $this->id2key[ $id ] : false;
+
+        if( false !== $key ) $this->offsetUnset( $key );
+
+        return $key ? true : false;
+    }
+
+    public function getIds()
+    {
+        return array_keys( $this->id2key );
+    }
+
+    /**
      * @param ModelAbstract $model
      */
     public function push( ModelAbstract $model )
@@ -228,9 +284,9 @@ class ModelCollection implements \Iterator, \ArrayAccess, \Countable, \JsonSeria
         return $item;
     }
 
-    public function unshift( $item, $key = null )
+    public function unshift( $item )
     {
-        $key = $key === null ? max($this->keys) + 1 : $key;
+        $key = max($this->keys);
 
         array_unshift( $this->keys, $key );
 
@@ -244,26 +300,62 @@ class ModelCollection implements \Iterator, \ArrayAccess, \Countable, \JsonSeria
         return isset( $this->items[$key] ) ? $this->items[$key] : null;
     }
 
+    /**
+     * @param mixed $key
+     * @param \Erum\ModelAbstract $model
+     * @throws \InvalidArgumentException
+     */
     public function offsetSet( $key, $model )
     {
-        if( false === ( $model instanceof ModelAbstract ) )
-            throw new \InvalidArgumentException('');
+        if( false === ( $model instanceof $this->modelClass ) )
+            throw new \InvalidArgumentException('$model must be instance of ' . $this->modelClass );
 
-        $key = $model->getId();
+        $id = $model->getId();
+
+        if( null === $key && isset( $this->id2key[ $id ] ) )
+        {
+            $key = $this->id2key[ $id ];
+        }
+
+        if( null === $key )
+        {
+            $key = sizeof( $this->keys ) ? max( $this->keys ) + 1 : 0;
+        }
 
         if( !isset( $this->items[$key] ) ) $this->keys[] = $key;
 
-        $this->items[$key] = $model;
+        if( $id ){
+
+            $this->id2key[ $id ] = $key;
+        }
+
+        $this->items[ $key ] = $model;
+
+        $this->reset();
     }
 
-    public function offsetExists( $offset )
+    public function offsetExists( $key )
     {
-        return isset( $this->items[$offset] );
+        return isset( $this->items[ $key ] );
     }
 
-    public function offsetUnset( $offset )
+    public function offsetUnset( $key )
     {
-        // TODO with keys
+        $key = (int)$key;
+        $isset = isset( $this->items[ $key ] );
+
+        if( $isset )
+        {
+            if( false !== ( $key = array_search( $key, $this->keys, true ) ) ) unset( $this->keys[ $key ] );
+
+            if( ( $id = $this->items[ $key ]->getId() ) ) unset( $this->id2key[ $id ] );
+
+            unset( $this->items[ $key ] );
+
+            $this->rewind();
+        }
+
+        return $isset;
     }
 
     // implements Countable interface
